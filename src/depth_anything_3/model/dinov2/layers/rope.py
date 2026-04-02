@@ -180,7 +180,7 @@ class RotaryPositionEmbedding2D(nn.Module):
         feature_dim = tokens.size(-1) // 2
 
         # Get frequency components
-        max_position = int(positions.max()) + 1
+        max_position = 512
         cos_comp, sin_comp = self._compute_frequency_components(
             feature_dim, max_position, tokens.device, tokens.dtype
         )
