@@ -159,6 +159,21 @@ class DepthAnything3Net(nn.Module):
         if "sky" not in output:
             return output
         non_sky_mask = compute_sky_mask(output.sky, threshold=0.3)
+
+        # Static processing for onnx export
+        if torch.compiler.is_compiling() or torch.jit.is_tracing():
+            is_valid = (non_sky_mask.sum() > 10) & ((~non_sky_mask).sum() > 10)
+
+            valid_depth = torch.where(non_sky_mask, output.depth, torch.zeros_like(output.depth))
+            non_sky_max = torch.max(valid_depth)
+
+            modified_depth, _ = set_sky_regions_to_max_depth(
+                output.depth, None, non_sky_mask, max_depth=non_sky_max
+            )
+
+            output.depth = torch.where(is_valid, modified_depth, output.depth)
+            return output
+
         if non_sky_mask.sum() <= 10:
             return output
         if (~non_sky_mask).sum() <= 10:
